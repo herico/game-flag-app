@@ -1,6 +1,12 @@
-# Flag Recognition Quiz – Offline Assets
+# Flag Recognition Game – Quiz and Pairs
 
-This PWA supports using local data and images so gameplay doesn’t re-hit external APIs on every question and works offline.
+This PWA now offers two ways to play and supports using local data and images so gameplay works fast and offline.
+
+## Game modes
+- Quiz (original): Guess the country name from a flag. 10 questions with a timer.
+- Pairs (new): Match countries to their flags. A session has 20 pairs shown in sets of 5 at a time.
+
+Use the “Game mode” selector in the header to switch. Your last choice is remembered.
 
 ## What changed
 - The app now looks for `assets/countries.json` first to load the countries list.
@@ -27,6 +33,8 @@ Notes:
 
 ## Development
 Just open `index.html` or serve locally to get proper PWA behavior.
+
+Tip: run the asset fetcher below to make sure flags and country names are available offline.
 
 ## Dark mode
 - The UI supports light and dark themes.

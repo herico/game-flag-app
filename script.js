@@ -5,6 +5,7 @@
 // Theme: Dark/Light handling
 // -------------------------
 const THEME_LS_KEY = 'flags:theme'; // 'light' | 'dark' or null for system
+const MODE_LS_KEY = 'flags:mode'; // 'quiz' | 'pairs'
 
 function getSystemTheme() {
   try {
@@ -290,6 +291,7 @@ const gameState = {
 // DOM Elements
 // -------------------------
 const els = {
+  modeSelect: document.getElementById('modeSelect'),
   progress: document.getElementById('progress'),
   progressBar: document.getElementById('progressBar'),
   progressCounter: document.getElementById('progressCounter'),
@@ -300,6 +302,11 @@ const els = {
   answerButtons: Array.from(document.querySelectorAll('.answer')),
   nextBtn: document.getElementById('nextBtn'),
   quizCard: document.getElementById('quiz-card'),
+  // Pairs mode elements
+  pairsCard: document.getElementById('pairs-card'),
+  pairsNames: document.getElementById('pairs-names'),
+  pairsFlags: document.getElementById('pairs-flags'),
+  pairsNextBtn: document.getElementById('pairsNextBtn'),
   resultsCard: document.getElementById('results-card'),
   resultTitle: document.getElementById('result-title'),
   resultScore: document.getElementById('result-score'),
@@ -339,6 +346,12 @@ function setProgress() {
     els.progressBar.setAttribute('aria-valuemax', String(gameState.total));
     els.progressBar.setAttribute('aria-valuenow', String(current));
   }
+}
+
+// Shared header helpers
+function showTimer(show) {
+  if (!els.timer) return;
+  els.timer.classList.toggle('hidden', !show);
 }
 
 // -------------------------
@@ -486,16 +499,256 @@ function startGame() {
 
   els.resultsCard.classList.add('hidden');
   els.quizCard.classList.remove('hidden');
+  els.pairsCard.classList.add('hidden');
   // Make sure Next button shows at game start (disabled until answer)
   els.nextBtn.classList.remove('hidden');
   renderQuestion();
+  showTimer(true);
   startTimer();
 }
 
 // Event wiring
 els.answerButtons.forEach(btn => btn.addEventListener('click', handleAnswerClick));
 els.nextBtn.addEventListener('click', nextQuestion);
-els.playAgainBtn.addEventListener('click', startGame);
+
+// -------------------------
+// Mode switching & Pairs Mode
+// -------------------------
+let appMode = 'quiz'; // 'quiz' | 'pairs'
+
+function setMode(mode) {
+  appMode = (mode === 'pairs') ? 'pairs' : 'quiz';
+  try { localStorage.setItem(MODE_LS_KEY, appMode); } catch {}
+  // Hide both, specific starters will reveal
+  els.quizCard.classList.add('hidden');
+  els.pairsCard.classList.add('hidden');
+  els.resultsCard.classList.add('hidden');
+  // Reset progress visuals
+  if (els.progress) els.progress.textContent = '';
+  if (els.progressCounter) els.progressCounter.textContent = '';
+  if (els.progressBar) { els.progressBar.value = 0; els.progressBar.max = 1; }
+  clearTimer();
+  showTimer(appMode === 'quiz');
+  if (appMode === 'quiz') startGame(); else startPairsGame();
+}
+
+// Pairing game state
+const pairingState = {
+  sessionTotal: 20,
+  roundSize: 5,
+  pool: [], // selected FLAGS for the entire session (20)
+  roundIndex: 0, // 0..3
+  matched: 0,
+  attempts: 0,
+  selectedName: null, // code
+  selectedFlag: null // code
+};
+
+function setPairsProgress() {
+  const current = pairingState.matched;
+  const total = pairingState.sessionTotal;
+  if (els.progress) {
+    const done = Math.min(current, total);
+    els.progress.textContent = `Pairs matched ${done} of ${total}`;
+  }
+  if (els.progressCounter) {
+    const remaining = Math.max(total - current, 0);
+    els.progressCounter.textContent = `${current} / ${total} • ${remaining} left`;
+  }
+  if (els.progressBar) {
+    els.progressBar.max = total;
+    els.progressBar.value = current;
+    els.progressBar.setAttribute('aria-valuemin', '0');
+    els.progressBar.setAttribute('aria-valuemax', String(total));
+    els.progressBar.setAttribute('aria-valuenow', String(current));
+  }
+}
+
+function clearPairsBoard() {
+  els.pairsNames.innerHTML = '';
+  els.pairsFlags.innerHTML = '';
+  pairingState.selectedName = null;
+  pairingState.selectedFlag = null;
+}
+
+function renderPairsRound() {
+  setPairsProgress();
+  els.quizCard.classList.add('hidden');
+  els.pairsCard.classList.remove('hidden');
+  els.resultsCard.classList.add('hidden');
+  els.pairsNextBtn.classList.add('hidden');
+
+  clearPairsBoard();
+  const start = pairingState.roundIndex * pairingState.roundSize;
+  const items = pairingState.pool.slice(start, start + pairingState.roundSize);
+  const names = shuffle(items);
+  const flags = shuffle(items);
+
+  // Render names
+  names.forEach((c) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'pair-btn';
+    btn.textContent = c.name;
+    btn.dataset.code = c.code;
+    btn.setAttribute('aria-label', `Country ${c.name}`);
+    btn.addEventListener('click', () => handleNameClick(btn));
+    els.pairsNames.appendChild(btn);
+  });
+
+  // Preload flags
+  preloadImages(flags.map(f => f.flag));
+
+  // Render flags
+  flags.forEach((c) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'pair-btn';
+    btn.dataset.code = c.code;
+    btn.setAttribute('aria-label', `Flag of ${c.name}`);
+    const img = document.createElement('img');
+    img.alt = `Flag of ${c.name}`;
+    img.className = 'flag-thumb';
+    setFlagImage(img, c.code, c.name);
+    btn.appendChild(img);
+    btn.addEventListener('click', () => handleFlagClick(btn));
+    els.pairsFlags.appendChild(btn);
+  });
+}
+
+function clearPairSelections() {
+  const all = [...els.pairsNames.querySelectorAll('.pair-btn.selected'), ...els.pairsFlags.querySelectorAll('.pair-btn.selected')];
+  all.forEach(b => b.classList.remove('selected'));
+  pairingState.selectedName = null;
+  pairingState.selectedFlag = null;
+}
+
+function onPairResolve(correct, nameBtn, flagBtn) {
+  if (correct) {
+    nameBtn.classList.add('correct');
+    flagBtn.classList.add('correct');
+    nameBtn.disabled = true;
+    flagBtn.disabled = true;
+    // Visually fade matched items
+    nameBtn.classList.add('paired');
+    flagBtn.classList.add('paired');
+    nameBtn.setAttribute('aria-disabled', 'true');
+    flagBtn.setAttribute('aria-disabled', 'true');
+    pairingState.matched += 1;
+    setPairsProgress();
+    // If round done
+    const start = pairingState.roundIndex * pairingState.roundSize;
+    const roundMatched = els.pairsNames.querySelectorAll('.pair-btn[disabled]').length;
+    if (roundMatched >= pairingState.roundSize) {
+      if (pairingState.matched >= pairingState.sessionTotal) {
+        showPairsResults();
+      } else {
+        els.pairsNextBtn.classList.remove('hidden');
+        // Move focus to Next for flow
+        requestAnimationFrame(() => els.pairsNextBtn.focus());
+      }
+    }
+  } else {
+    nameBtn.classList.add('wrong');
+    flagBtn.classList.add('wrong');
+    pairingState.attempts += 1;
+    setTimeout(() => {
+      nameBtn.classList.remove('wrong', 'selected');
+      flagBtn.classList.remove('wrong', 'selected');
+    }, 600);
+  }
+  pairingState.selectedName = null;
+  pairingState.selectedFlag = null;
+}
+
+function tryResolvePair() {
+  const nameCode = pairingState.selectedName;
+  const flagCode = pairingState.selectedFlag;
+  if (!nameCode || !flagCode) return;
+  const nameBtn = els.pairsNames.querySelector(`.pair-btn.selected[data-code="${nameCode}"]`);
+  const flagBtn = els.pairsFlags.querySelector(`.pair-btn.selected[data-code="${flagCode}"]`);
+  const correct = nameCode === flagCode;
+  onPairResolve(correct, nameBtn, flagBtn);
+}
+
+function handleNameClick(btn) {
+  if (btn.disabled) return;
+  // Toggle selection
+  const already = btn.classList.contains('selected');
+  els.pairsNames.querySelectorAll('.pair-btn').forEach(b => b.classList.remove('selected'));
+  if (already) {
+    pairingState.selectedName = null;
+    btn.classList.remove('selected');
+  } else {
+    pairingState.selectedName = btn.dataset.code;
+    btn.classList.add('selected');
+  }
+  tryResolvePair();
+}
+
+function handleFlagClick(btn) {
+  if (btn.disabled) return;
+  const already = btn.classList.contains('selected');
+  els.pairsFlags.querySelectorAll('.pair-btn').forEach(b => b.classList.remove('selected'));
+  if (already) {
+    pairingState.selectedFlag = null;
+    btn.classList.remove('selected');
+  } else {
+    pairingState.selectedFlag = btn.dataset.code;
+    btn.classList.add('selected');
+  }
+  tryResolvePair();
+}
+
+function nextPairsRound() {
+  pairingState.roundIndex += 1;
+  renderPairsRound();
+}
+
+function startPairsGame() {
+  clearTimer();
+  showTimer(false);
+  els.resultsCard.classList.add('hidden');
+  els.quizCard.classList.add('hidden');
+  els.pairsCard.classList.remove('hidden');
+  pairingState.pool = shuffle(FLAGS).slice(0, pairingState.sessionTotal);
+  pairingState.roundIndex = 0;
+  pairingState.matched = 0;
+  pairingState.attempts = 0;
+  renderPairsRound();
+}
+
+function showPairsResults() {
+  els.quizCard.classList.add('hidden');
+  els.pairsCard.classList.add('hidden');
+  els.resultsCard.classList.remove('hidden');
+  const s = pairingState.matched;
+  els.resultTitle.textContent = 'Pairs complete!';
+  els.resultScore.textContent = `You matched ${s} / ${pairingState.sessionTotal} countries` + (pairingState.attempts ? ` with ${pairingState.attempts} extra attempts.` : '.');
+  try {
+    const best = Number(localStorage.getItem('bestPairs') || 0);
+    if (s > best) localStorage.setItem('bestPairs', String(s));
+    const bestNow = Math.max(best, s);
+    els.bestScore.textContent = `Best pairs: ${bestNow} / ${pairingState.sessionTotal}`;
+  } catch {}
+}
+
+// Wire mode UI
+if (els.modeSelect) {
+  try {
+    const saved = localStorage.getItem(MODE_LS_KEY);
+    if (saved === 'pairs' || saved === 'quiz') els.modeSelect.value = saved;
+  } catch {}
+  els.modeSelect.addEventListener('change', () => setMode(els.modeSelect.value));
+}
+
+// Pairs next button
+if (els.pairsNextBtn) els.pairsNextBtn.addEventListener('click', nextPairsRound);
+
+// Play again respects current mode
+els.playAgainBtn.addEventListener('click', () => {
+  if (appMode === 'pairs') startPairsGame(); else startGame();
+});
 
 // Initialize: load dataset, then start
 (async () => {
@@ -503,7 +756,9 @@ els.playAgainBtn.addEventListener('click', startGame);
     els.progress.textContent = 'Loading…';
     await loadFlagsDataset();
   } finally {
-    startGame();
+    // Start with saved mode or default to quiz
+    const saved = (() => { try { return localStorage.getItem(MODE_LS_KEY); } catch { return null; } })();
+    setMode(saved === 'pairs' ? 'pairs' : 'quiz');
   }
 })();
 

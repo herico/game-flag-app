@@ -45,6 +45,13 @@
       <nav>
         <ul>
           <li><strong>Flag Quiz</strong></li>
+          <li class="mode-select-wrap">
+            <label for="modeSelect" class="sr-only">Game mode</label>
+            <select id="modeSelect" aria-label="Select game mode" title="Select game mode">
+              <option value="quiz">Quiz</option>
+              <option value="pairs">Pairs</option>
+            </select>
+          </li>
         </ul>
         <ul class="header-progress">
           <li>
@@ -61,7 +68,7 @@
     </header>
 
     <main class="container">
-      <article id="quiz-card" class="card">
+  <article id="quiz-card" class="card">
         <figure id="flag-box" class="flag-box">
           <div id="flagSpinner" class="spinner hidden" role="status" aria-live="polite" aria-label="Loading flag">
             <span class="sr-only">Loading flag…</span>
@@ -78,6 +85,29 @@
 
         <footer class="actions">
           <button id="nextBtn" class="secondary hidden" disabled>Next question</button>
+        </footer>
+      </article>
+
+      <!-- Pairs mode -->
+      <article id="pairs-card" class="card hidden" aria-labelledby="pairs-title">
+        <header>
+          <h2 id="pairs-title">Match the pairs</h2>
+          <p class="muted" id="pairs-subtitle">Tap a country and then its flag. Match all 5 to go to the next set.</p>
+        </header>
+
+        <section class="pairs-grid" aria-live="polite">
+          <div class="pairs-col">
+            <h3 class="sr-only">Countries</h3>
+            <div id="pairs-names" class="pairs-names" role="list"></div>
+          </div>
+          <div class="pairs-col">
+            <h3 class="sr-only">Flags</h3>
+            <div id="pairs-flags" class="pairs-flags" role="list"></div>
+          </div>
+        </section>
+
+        <footer class="actions">
+          <button id="pairsNextBtn" class="secondary hidden" type="button">Next 5</button>
         </footer>
       </article>
 
