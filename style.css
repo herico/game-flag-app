@@ -179,6 +179,45 @@ main.container {
 .muted { color: #5b6f92; }
 .lead { font-size: 1.15rem; }
 
+/* Header progress bar styling */
+.header-progress {
+  width: 100%;
+}
+
+#progressBar {
+  width: clamp(180px, 40vw, 360px);
+  height: 10px;
+  vertical-align: middle;
+}
+
+.header-progress li {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+#progressCounter {
+  color: var(--color-blue-dark);
+  opacity: 0.9;
+}
+
+/* Chrome/Safari */
+#progressBar::-webkit-progress-bar {
+  background-color: rgba(168, 218, 220, 0.35);
+  border-radius: 999px;
+}
+
+#progressBar::-webkit-progress-value {
+  background-color: var(--color-blue);
+  border-radius: 999px;
+}
+
+/* Firefox */
+#progressBar::-moz-progress-bar {
+  background-color: var(--color-blue);
+  border-radius: 999px;
+}
+
 @media (prefers-reduced-motion: reduce) {
   * {
     transition: none !important;

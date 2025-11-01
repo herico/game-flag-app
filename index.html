@@ -28,8 +28,12 @@
         <ul>
           <li><strong>Flag Quiz</strong></li>
         </ul>
-        <ul>
-          <li><small id="progress">Question 1 of 10</small></li>
+        <ul class="header-progress">
+          <li>
+            <progress id="progressBar" value="0" max="10" aria-label="Quiz progress"></progress>
+            <small id="progressCounter" aria-hidden="true">1 / 10 • 9 left</small>
+            <small id="progress" class="sr-only">Question 1 of 10</small>
+          </li>
         </ul>
       </nav>
     </header>

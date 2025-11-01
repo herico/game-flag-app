@@ -138,6 +138,8 @@ const gameState = {
 // -------------------------
 const els = {
   progress: document.getElementById('progress'),
+  progressBar: document.getElementById('progressBar'),
+  progressCounter: document.getElementById('progressCounter'),
   flagImage: document.getElementById('flagImage'),
   flagSpinner: document.getElementById('flagSpinner'),
   answersWrap: document.getElementById('answers'),
@@ -167,7 +169,22 @@ function createQuestions() {
 }
 
 function setProgress() {
-  els.progress.textContent = `Question ${Math.min(gameState.current + 1, gameState.total)} of ${gameState.total}`;
+  const current = Math.min(gameState.current + 1, gameState.total);
+  if (els.progress) {
+    els.progress.textContent = `Question ${current} of ${gameState.total}`;
+  }
+  if (els.progressCounter) {
+    const remaining = Math.max(gameState.total - current, 0);
+    els.progressCounter.textContent = `${current} / ${gameState.total} • ${remaining} left`;
+  }
+  if (els.progressBar) {
+    els.progressBar.max = gameState.total;
+    // Show the current question (starts at 1 on the first question)
+    els.progressBar.value = current;
+    els.progressBar.setAttribute('aria-valuemin', '0');
+    els.progressBar.setAttribute('aria-valuemax', String(gameState.total));
+    els.progressBar.setAttribute('aria-valuenow', String(current));
+  }
 }
 
 function renderQuestion() {
