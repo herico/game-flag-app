@@ -1,5 +1,5 @@
 /* Flag Quiz PWA Service Worker */
-const CACHE_NAME = 'flag-quiz-cache-v10';
+const CACHE_NAME = 'flag-quiz-cache-v11';
 
 const CORE_ASSETS = [
   './',
@@ -34,27 +34,71 @@ self.addEventListener('fetch', (event) => {
   const { request } = event;
   if (request.method !== 'GET') return;
 
+  const url = new URL(request.url);
+  const isSameOrigin = url.origin === self.location.origin;
+  const isImage = request.destination === 'image' || /\.(png|svg|jpg|jpeg|webp|gif)(\?.*)?$/i.test(url.pathname);
+
+  // Strategy:
+  // - For images (any origin): cache-first, then network; cache opaque too
+  // - For same-origin: cache-first
+  // - For others: network-first with cache fallback
+
+  if (isImage) {
+    event.respondWith(
+      caches.match(request).then((cached) => {
+        if (cached) return cached;
+        return fetch(request)
+          .then((response) => {
+            // Cache successful or opaque image responses
+            try {
+              if (response.ok || response.type === 'opaque') {
+                const copy = response.clone();
+                caches.open(CACHE_NAME).then((cache) => cache.put(request, copy)).catch(() => {});
+              }
+            } catch {}
+            return response;
+          })
+          .catch(() => caches.match('./assets/icons/icon-192.svg'));
+      })
+    );
+    return;
+  }
+
+  if (isSameOrigin) {
+    event.respondWith(
+      caches.match(request).then((cached) => {
+        if (cached) return cached;
+        return fetch(request)
+          .then((response) => {
+            try {
+              if (response.ok) {
+                const copy = response.clone();
+                caches.open(CACHE_NAME).then((cache) => cache.put(request, copy)).catch(() => {});
+              }
+            } catch {}
+            return response;
+          })
+          .catch(() => {
+            if (request.mode === 'navigate') return caches.match('./index.html');
+            return new Response('');
+          });
+      })
+    );
+    return;
+  }
+
+  // Default: network-first
   event.respondWith(
-    caches.match(request).then((cached) => {
-      if (cached) return cached;
-      return fetch(request)
-        .then((response) => {
-          // Cache only successful same-origin responses to avoid persisting 3rd-party errors
-          try {
-            if (response.ok && response.type === 'basic') {
-              const copy = response.clone();
-              caches.open(CACHE_NAME).then((cache) => cache.put(request, copy)).catch(() => {});
-            }
-          } catch {}
-          return response;
-        })
-        .catch(() => {
-          // Offline fallback for navigation requests
-          if (request.mode === 'navigate') {
-            return caches.match('./index.html');
+    fetch(request)
+      .then((response) => {
+        try {
+          if (response.ok && response.type === 'basic') {
+            const copy = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, copy)).catch(() => {});
           }
-          return new Response('');
-        });
-    })
+        } catch {}
+        return response;
+      })
+      .catch(() => caches.match(request))
   );
 });

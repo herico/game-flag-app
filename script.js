@@ -1,5 +1,5 @@
 // Flag Recognition Quiz - Vanilla JS
-// Uses local SVG flags and caches assets via a Service Worker for offline use.
+// Uses local SVG/PNG flags and caches assets via a Service Worker for offline use.
 
 // -------------------------
 // Data: Flags (loaded dynamically)
@@ -11,6 +11,11 @@ const FLAG_STYLE = 'flat';
 // Prefer higher-resolution rasters when vector is unavailable
 const FLAG_SIZE = 512; // px
 
+// Prefer local assets first when available
+const LOCAL_COUNTRIES_JSON = './assets/countries.json';
+const localFlagSvgUrl = (code) => `./assets/flags/${String(code || '').toLowerCase()}.svg`;
+const localFlagPngUrl = (code) => `./assets/flags/${String(code || '').toLowerCase()}.png`;
+
 const flagUrl = (code, style = FLAG_STYLE, size = FLAG_SIZE) => `${FLAGS_API_BASE}/${code}/${style}/${size}.svg`;
 const flagSvgUrl = (code) => {
   // FlagCDN requires lowercase ISO 3166-1 alpha-2 codes
@@ -18,9 +23,11 @@ const flagSvgUrl = (code) => {
 };
 
 const flagCandidates = (code) => [
-  // Prefer crisp vector first
+  // Local assets first
+  localFlagSvgUrl(code),
+  localFlagPngUrl(code),
+  // Remote providers as fallback
   flagSvgUrl(code),
-  // Then fall back to high-res rasters
   flagUrl(code, 'flat', 512),
   flagUrl(code, 'flat', 256),
   flagUrl(code, 'shiny', 512)
@@ -60,18 +67,65 @@ function setFlagImage(el, code, name, spinnerEl) {
 }
 
 async function loadFlagsDataset() {
-  // Fetch country names and ISO codes; fallback to a minimal local list if network fails
+  // Fetch country names and ISO codes; prefer local file or localStorage, fallback to network and then to a minimal list
+  const LS_KEY = 'flags:countries:v1';
+
+  // Helper to normalize various shapes to [{code, name}]
+  const normalize = (data) => {
+    if (!Array.isArray(data)) return [];
+    // If already simplified
+    if (data.length && data[0] && 'code' in data[0] && 'name' in data[0]) {
+      return data
+        .map((c) => ({ code: String(c.code || '').toUpperCase(), name: c.name || '' }))
+        .filter((c) => /^[A-Z]{2}$/.test(c.code) && c.name && c.code !== 'XK');
+    }
+    // REST Countries shape
+    return data
+      .map((c) => ({ code: String(c.cca2 || '').toUpperCase(), name: c.name?.common || '' }))
+      .filter((c) => /^[A-Z]{2}$/.test(c.code) && c.name && c.code !== 'XK');
+  };
+
+  // 1) Try localStorage cache first
   try {
-    // REST Countries: country name and alpha-2 code
+    const cached = localStorage.getItem(LS_KEY);
+    if (cached) {
+      const raw = JSON.parse(cached);
+      const simple = normalize(raw);
+      if (simple.length) {
+        FLAGS = simple.map((c) => ({ ...c, flag: localFlagSvgUrl(c.code) }))
+          .sort((a, b) => a.name.localeCompare(b.name));
+        return;
+      }
+    }
+  } catch {}
+
+  // 2) Try local file (same-origin)
+  try {
+    const resp = await fetch(LOCAL_COUNTRIES_JSON, { cache: 'no-cache' });
+    if (resp.ok) {
+      const data = await resp.json();
+      const simple = normalize(data);
+      if (simple.length) {
+        FLAGS = simple.map((c) => ({ ...c, flag: localFlagSvgUrl(c.code) }))
+          .sort((a, b) => a.name.localeCompare(b.name));
+        try { localStorage.setItem(LS_KEY, JSON.stringify(simple)); } catch {}
+        return;
+      }
+    }
+  } catch {}
+
+  // 3) Network: REST Countries
+  try {
     const resp = await fetch('https://restcountries.com/v3.1/all?fields=cca2,name,flags,region');
     const data = await resp.json();
-    FLAGS = data
-      .map((c) => ({ code: String(c.cca2 || '').toUpperCase(), name: c.name?.common || '' }))
-      .filter((c) => /^[A-Z]{2}$/.test(c.code) && c.name && c.code !== 'XK')
-      .map((c) => ({ ...c, flag: flagUrl(c.code) }))
+    const simple = normalize(data);
+    FLAGS = simple
+      .map((c) => ({ ...c, flag: localFlagSvgUrl(c.code) }))
       .sort((a, b) => a.name.localeCompare(b.name));
+    // Store simplified list for next time
+    try { localStorage.setItem(LS_KEY, JSON.stringify(simple)); } catch {}
   } catch (e) {
-    // Minimal fallback (ensures the app still works offline)
+    // 4) Minimal fallback (ensures the app still works offline)
     const fallback = [
       { code: 'FR', name: 'France' },
       { code: 'IT', name: 'Italy' },
@@ -89,7 +143,7 @@ async function loadFlagsDataset() {
       { code: 'SE', name: 'Sweden' },
       { code: 'DK', name: 'Denmark' }
     ];
-    FLAGS = fallback.map((c) => ({ ...c, flag: flagUrl(c.code) }));
+    FLAGS = fallback.map((c) => ({ ...c, flag: localFlagSvgUrl(c.code) }));
   }
 }
 
