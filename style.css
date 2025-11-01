@@ -1,0 +1,187 @@
+:root {
+  --color-red: #E63946;
+  --color-honeydew: #F1FAEE;
+  --color-blue-light: #A8DADC;
+  --color-blue: #457B9D;
+  --color-blue-dark: #1D3557;
+
+  --radius: 14px;
+  --shadow: 0 6px 18px rgba(29, 53, 87, 0.12);
+  --shadow-hover: 0 10px 24px rgba(29, 53, 87, 0.16);
+}
+
+html, body {
+  height: 100%;
+  background: var(--color-honeydew);
+}
+
+body {
+  color: var(--color-blue-dark);
+  position: relative;
+}
+
+.header nav {
+  background: transparent;
+}
+
+main.container {
+  max-width: 680px;
+  padding: 1rem;
+}
+
+.card {
+  background: #fff;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 1.25rem 1.25rem 1.5rem;
+  margin-block: 1rem 2rem;
+  transition: box-shadow 200ms ease, transform 200ms ease;
+}
+
+.card:hover {
+  box-shadow: var(--shadow-hover);
+}
+
+.flag-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  border-radius: 12px;
+  padding: 0.75rem;
+  margin: 0 0 1rem 0;
+  box-shadow: inset 0 0 0 1px rgba(29, 53, 87, 0.06);
+  position: relative;
+  min-height: 160px;
+}
+
+#flagImage {
+  width: 100%;
+  max-height: 240px;
+  object-fit: contain;
+  border-radius: 10px;
+  filter: drop-shadow(0 2px 8px rgba(29, 53, 87, 0.12));
+  background: #fff;
+  opacity: 0;
+  transition: opacity 220ms ease;
+}
+
+#flagImage.loaded {
+  opacity: 1;
+}
+
+/* Spinner overlay centered in the flag box */
+.spinner {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.spinner::before {
+  content: "";
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 3px solid var(--color-blue-light);
+  border-top-color: var(--color-blue);
+  animation: spin 900ms linear infinite;
+  box-shadow: 0 2px 8px rgba(29, 53, 87, 0.15);
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Visually-hidden for screen readers */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.answers {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: 1fr;
+  margin-bottom: 1rem;
+}
+
+@media (min-width: 640px) {
+  .answers {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.answers .answer {
+  width: 100%;
+  border-radius: 12px;
+  background: #fff;
+  border: 1px solid var(--color-blue-light);
+  box-shadow: var(--shadow);
+  color: var(--color-blue-dark);
+  transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease, color 160ms ease, border-color 160ms ease;
+}
+
+.answers .answer:hover,
+.answers .answer:focus-visible {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-hover);
+  border-color: var(--color-blue);
+  background: var(--color-blue-light);
+  color: var(--color-blue-dark);
+}
+
+.answers .answer.correct {
+  background: var(--color-blue);
+  color: #fff;
+  border-color: var(--color-blue);
+}
+
+.answers .answer.wrong {
+  background: var(--color-red);
+  color: #fff;
+  border-color: var(--color-red);
+}
+
+.answers .answer[disabled] {
+  opacity: 0.9;
+  cursor: not-allowed;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 1.25rem;
+  background-color: #fff;
+  border: none;
+}
+
+/* Extra breathing room on smaller screens between options and Next button */
+@media (max-width: 640px) {
+  .actions { margin-top: 1.75rem; }
+}
+
+#nextBtn[disabled] {
+  opacity: 0.5;
+}
+
+.hidden { display: none !important; }
+
+.muted { color: #5b6f92; }
+.lead { font-size: 1.15rem; }
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
+}

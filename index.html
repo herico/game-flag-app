@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Flag Recognition Quiz</title>
+    <meta name="description" content="A clean, fast, installable Flag Recognition Quiz PWA built with Vanilla JS and PicoCSS." />
+    <meta name="theme-color" content="#457B9D" />
+
+    <!-- PicoCSS via CDN -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"
+    />
+
+    <!-- App styles -->
+    <link rel="stylesheet" href="./style.css" />
+
+    <!-- Manifest -->
+    <link rel="manifest" href="./manifest.json" />
+
+    <!-- Icons -->
+    <link rel="icon" href="./assets/icons/icon-192.svg" type="image/svg+xml" />
+  </head>
+  <body>
+    <header class="container header">
+      <nav>
+        <ul>
+          <li><strong>Flag Quiz</strong></li>
+        </ul>
+        <ul>
+          <li><small id="progress">Question 1 of 10</small></li>
+        </ul>
+      </nav>
+    </header>
+
+    <main class="container">
+      <article id="quiz-card" class="card">
+        <figure id="flag-box" class="flag-box">
+          <div id="flagSpinner" class="spinner hidden" role="status" aria-live="polite" aria-label="Loading flag">
+            <span class="sr-only">Loading flag…</span>
+          </div>
+          <img id="flagImage" alt="Guess the country by its flag" loading="eager" />
+        </figure>
+
+        <div id="answers" class="answers">
+          <button type="button" class="answer" data-index="0" aria-label="Option 1"></button>
+          <button type="button" class="answer" data-index="1" aria-label="Option 2"></button>
+          <button type="button" class="answer" data-index="2" aria-label="Option 3"></button>
+          <button type="button" class="answer" data-index="3" aria-label="Option 4"></button>
+        </div>
+
+        <footer class="actions">
+          <button id="nextBtn" class="secondary hidden" disabled>Next question</button>
+        </footer>
+      </article>
+
+      <article id="results-card" class="card hidden">
+        <header>
+          <h2 id="result-title">Results</h2>
+          <p id="result-score" class="lead"></p>
+          <p id="best-score" class="muted"></p>
+        </header>
+        <footer class="actions">
+          <button id="playAgainBtn" class="contrast">Play again</button>
+        </footer>
+      </article>
+    </main>
+    <script src="./script.js" defer></script>
+  </body>
+  </html>

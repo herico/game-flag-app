@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 600">
+  <rect width="900" height="600" fill="#C60C30"/>
+  <!-- Nordic cross -->
+  <rect x="0" y="252" width="900" height="96" fill="#FFFFFF"/>
+  <rect x="252" y="0" width="96" height="600" fill="#FFFFFF"/>
+</svg>
