@@ -1,22 +1,60 @@
 :root {
+  /* Base palette */
   --color-red: #E63946;
   --color-honeydew: #F1FAEE;
   --color-blue-light: #A8DADC;
   --color-blue: #457B9D;
   --color-blue-dark: #1D3557;
 
+  /* Theme tokens (light by default) */
+  --bg: var(--color-honeydew);
+  --text: var(--color-blue-dark);
+  --muted: #5b6f92;
+  --card-bg: #ffffff;
+  --surface: #ffffff;
+  --border-color: rgba(29, 53, 87, 0.15);
+  --border-inset: rgba(29, 53, 87, 0.06);
+  --hover-bg: var(--color-blue-light);
+  --accent: var(--color-blue);
+  --accent-contrast: #ffffff;
+  --timer-bg: var(--color-blue-dark);
+  --progress-track: rgba(168, 218, 220, 0.35);
+  --progress-value: var(--color-blue);
+  --theme-color: #457B9D; /* Used for meta theme-color */
+
   --radius: 14px;
   --shadow: 0 6px 18px rgba(29, 53, 87, 0.12);
   --shadow-hover: 0 10px 24px rgba(29, 53, 87, 0.16);
 }
 
+/* Dark theme overrides */
+[data-theme="dark"] {
+  --bg: #0b1324;
+  --text: #e6edf3;
+  --muted: #93a3bf;
+  --card-bg: #111b2f;
+  --surface: #0f172a;
+  --border-color: rgba(148, 163, 184, 0.22);
+  --border-inset: rgba(148, 163, 184, 0.12);
+  --hover-bg: rgba(69, 123, 157, 0.25);
+  --accent: #5fa6d1;
+  --accent-contrast: #0b1324;
+  --timer-bg: #1f2a44;
+  --progress-track: rgba(148, 163, 184, 0.25);
+  --progress-value: #5fa6d1;
+  --theme-color: #0b1324;
+
+  --shadow: 0 6px 18px rgba(3, 10, 22, 0.5);
+  --shadow-hover: 0 10px 24px rgba(3, 10, 22, 0.6);
+}
+
 html, body {
   height: 100%;
-  background: var(--color-honeydew);
+  background: var(--bg);
 }
 
 body {
-  color: var(--color-blue-dark);
+  color: var(--text);
   position: relative;
 }
 
@@ -30,7 +68,7 @@ main.container {
 }
 
 .card {
-  background: #fff;
+  background: var(--card-bg);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
   padding: 1.25rem 1.25rem 1.5rem;
@@ -46,11 +84,11 @@ main.container {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #fff;
+  background: var(--surface);
   border-radius: 12px;
   padding: 0.75rem;
   margin: 0 0 1rem 0;
-  box-shadow: inset 0 0 0 1px rgba(29, 53, 87, 0.06);
+  box-shadow: inset 0 0 0 1px var(--border-inset);
   position: relative;
   min-height: 160px;
 }
@@ -61,7 +99,7 @@ main.container {
   object-fit: contain;
   border-radius: 10px;
   filter: drop-shadow(0 2px 8px rgba(29, 53, 87, 0.12));
-  background: #fff;
+  background: var(--card-bg);
   opacity: 0;
   transition: opacity 220ms ease;
 }
@@ -124,10 +162,10 @@ main.container {
 .answers .answer {
   width: 100%;
   border-radius: 12px;
-  background: #fff;
-  border: 1px solid var(--color-blue-light);
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
   box-shadow: var(--shadow);
-  color: var(--color-blue-dark);
+  color: var(--text);
   transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease, color 160ms ease, border-color 160ms ease;
 }
 
@@ -135,15 +173,15 @@ main.container {
 .answers .answer:focus-visible {
   transform: translateY(-1px);
   box-shadow: var(--shadow-hover);
-  border-color: var(--color-blue);
-  background: var(--color-blue-light);
-  color: var(--color-blue-dark);
+  border-color: var(--accent);
+  background: var(--hover-bg);
+  color: var(--text);
 }
 
 .answers .answer.correct {
-  background: var(--color-blue);
-  color: #fff;
-  border-color: var(--color-blue);
+  background: var(--accent);
+  color: var(--accent-contrast);
+  border-color: var(--accent);
 }
 
 .answers .answer.wrong {
@@ -161,7 +199,7 @@ main.container {
   display: flex;
   justify-content: flex-end;
   margin-top: 1.25rem;
-  background-color: #fff;
+  background-color: var(--card-bg);
   border: none;
 }
 
@@ -176,7 +214,7 @@ main.container {
 
 .hidden { display: none !important; }
 
-.muted { color: #5b6f92; }
+.muted { color: var(--muted); }
 .lead { font-size: 1.15rem; }
 
 /* Header progress bar styling */
@@ -197,12 +235,12 @@ main.container {
 }
 
 #progressCounter {
-  color: var(--color-blue-dark);
+  color: var(--text);
   opacity: 0.9;
 }
 
 .timer {
-  background: var(--color-blue-dark);
+  background: var(--timer-bg);
   color: #fff;
   border-radius: 999px;
   padding: 0.2rem 0.55rem;
@@ -213,19 +251,39 @@ main.container {
 
 /* Chrome/Safari */
 #progressBar::-webkit-progress-bar {
-  background-color: rgba(168, 218, 220, 0.35);
+  background-color: var(--progress-track);
   border-radius: 999px;
 }
 
 #progressBar::-webkit-progress-value {
-  background-color: var(--color-blue);
+  background-color: var(--progress-value);
   border-radius: 999px;
 }
 
 /* Firefox */
 #progressBar::-moz-progress-bar {
-  background-color: var(--color-blue);
+  background-color: var(--progress-value);
   border-radius: 999px;
+}
+
+/* Theme toggle button */
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 999px;
+  border: 1px solid var(--border-color);
+  background: var(--card-bg);
+  color: var(--text);
+  box-shadow: var(--shadow);
+  transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.theme-toggle:hover, .theme-toggle:focus-visible {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-hover);
 }
 
 @media (prefers-reduced-motion: reduce) {

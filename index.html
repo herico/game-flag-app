@@ -5,7 +5,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Flag Recognition Quiz</title>
     <meta name="description" content="A clean, fast, installable Flag Recognition Quiz PWA built with Vanilla JS and PicoCSS." />
-    <meta name="theme-color" content="#457B9D" />
+    <meta name="color-scheme" content="light dark" />
+    <!-- Theme color (updated by JS for manual preference); media variants for system default -->
+    <meta id="meta-theme-color" name="theme-color" content="#457B9D" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#457B9D" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0b1324" />
+
+    <!-- Apply saved theme early to avoid FOUC -->
+    <script>
+      (function () {
+        try {
+          var saved = localStorage.getItem('flags:theme');
+          if (saved === 'light' || saved === 'dark') {
+            document.documentElement.setAttribute('data-theme', saved);
+          } else {
+            // No explicit choice; leave unset to follow system
+          }
+        } catch (e) {}
+      })();
+    </script>
 
     <!-- PicoCSS via CDN -->
     <link
@@ -34,6 +52,9 @@
             <small id="progressCounter" aria-hidden="true">1 / 10 • 9 left</small>
             <small id="timer" class="timer" aria-live="off" aria-label="Time remaining 03:00">03:00</small>
             <small id="progress" class="sr-only">Question 1 of 10</small>
+          </li>
+          <li>
+            <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle dark mode" title="Toggle dark mode">🌙</button>
           </li>
         </ul>
       </nav>

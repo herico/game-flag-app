@@ -2,6 +2,101 @@
 // Uses local SVG/PNG flags and caches assets via a Service Worker for offline use.
 
 // -------------------------
+// Theme: Dark/Light handling
+// -------------------------
+const THEME_LS_KEY = 'flags:theme'; // 'light' | 'dark' or null for system
+
+function getSystemTheme() {
+  try {
+    return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  } catch { return 'light'; }
+}
+
+function updateMetaThemeColor() {
+  try {
+    const meta = document.querySelector('#meta-theme-color');
+    if (!meta) return;
+    const cs = getComputedStyle(document.documentElement);
+    const c = (cs.getPropertyValue('--theme-color') || '').trim();
+    if (c) meta.setAttribute('content', c);
+  } catch {}
+}
+
+function setTheme(theme, { persist = true } = {}) {
+  // theme must be 'light' or 'dark'. If null/undefined, remove explicit theme to follow system.
+  if (theme === 'light' || theme === 'dark') {
+    document.documentElement.setAttribute('data-theme', theme);
+    if (persist) try { localStorage.setItem(THEME_LS_KEY, theme); } catch {}
+  } else {
+    document.documentElement.removeAttribute('data-theme');
+    if (persist) try { localStorage.removeItem(THEME_LS_KEY); } catch {}
+  }
+  // Defer meta update to ensure styles are applied
+  requestAnimationFrame(updateMetaThemeColor);
+  updateToggleIcon();
+}
+
+function getEffectiveTheme() {
+  const saved = (() => { try { return localStorage.getItem(THEME_LS_KEY); } catch { return null; } })();
+  return (saved === 'light' || saved === 'dark') ? saved : getSystemTheme();
+}
+
+function updateToggleIcon() {
+  const btn = document.getElementById('themeToggle');
+  if (!btn) return;
+  const eff = getEffectiveTheme();
+  if (eff === 'dark') {
+    btn.textContent = '☀️';
+    btn.setAttribute('aria-label', 'Switch to light mode');
+    btn.setAttribute('title', 'Switch to light mode');
+  } else {
+    btn.textContent = '🌙';
+    btn.setAttribute('aria-label', 'Switch to dark mode');
+    btn.setAttribute('title', 'Switch to dark mode');
+  }
+}
+
+// Initialize theme on load (respect saved, else system)
+(function initTheme() {
+  try {
+    const saved = localStorage.getItem(THEME_LS_KEY);
+    if (saved === 'light' || saved === 'dark') {
+      // Early inline script already set attribute; ensure meta reflects it
+      requestAnimationFrame(updateMetaThemeColor);
+    } else {
+      // Follow system; ensure meta reflects computed CSS
+      requestAnimationFrame(updateMetaThemeColor);
+    }
+    // React to system changes only if user hasn't explicitly chosen
+    if (window.matchMedia) {
+      const mq = window.matchMedia('(prefers-color-scheme: dark)');
+      const onChange = () => {
+        const explicit = (() => { try { return localStorage.getItem(THEME_LS_KEY); } catch { return null; } })();
+        if (explicit !== 'light' && explicit !== 'dark') {
+          // No explicit preference: update meta/icon
+          updateMetaThemeColor();
+          updateToggleIcon();
+        }
+      };
+      if (mq.addEventListener) mq.addEventListener('change', onChange);
+      else if (mq.addListener) mq.addListener(onChange);
+    }
+    // Wire toggle click later (after DOM is parsed)
+    window.addEventListener('DOMContentLoaded', () => {
+      const btn = document.getElementById('themeToggle');
+      if (btn) {
+        btn.addEventListener('click', () => {
+          const current = getEffectiveTheme();
+          const next = current === 'dark' ? 'light' : 'dark';
+          setTheme(next, { persist: true });
+        });
+        updateToggleIcon();
+      }
+    });
+  } catch {}
+})();
+
+// -------------------------
 // Data: Flags (loaded dynamically)
 // -------------------------
 let FLAGS = [];

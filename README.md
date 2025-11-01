@@ -28,6 +28,12 @@ Notes:
 ## Development
 Just open `index.html` or serve locally to get proper PWA behavior.
 
+## Dark mode
+- The UI supports light and dark themes.
+- It follows your system setting by default.
+- Use the moon/sun toggle in the header to switch and persist your preference (stored in `localStorage`).
+- The browser address bar color updates to match the active theme.
+
 ## Caching behavior
 - Same-origin files are served cache-first by the service worker.
 - Images (any origin) are cache-first and stored even if responses are opaque (cross-origin without CORS headers).
