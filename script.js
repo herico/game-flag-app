@@ -130,7 +130,11 @@ const gameState = {
   current: 0,
   score: 0,
   questions: [], // array of { correct: Flag, options: Flag[] }
-  locked: false
+  locked: false,
+  // Timer
+  timerId: null,
+  endsAt: 0,
+  timedOut: false
 };
 
 // -------------------------
@@ -140,6 +144,7 @@ const els = {
   progress: document.getElementById('progress'),
   progressBar: document.getElementById('progressBar'),
   progressCounter: document.getElementById('progressCounter'),
+  timer: document.getElementById('timer'),
   flagImage: document.getElementById('flagImage'),
   flagSpinner: document.getElementById('flagSpinner'),
   answersWrap: document.getElementById('answers'),
@@ -185,6 +190,50 @@ function setProgress() {
     els.progressBar.setAttribute('aria-valuemax', String(gameState.total));
     els.progressBar.setAttribute('aria-valuenow', String(current));
   }
+}
+
+// -------------------------
+// Timer
+// -------------------------
+const TIMER_TOTAL_MS = 3 * 60 * 1000; // 3 minutes
+
+function fmtTime(ms) {
+  const totalSec = Math.max(0, Math.ceil(ms / 1000));
+  const mm = String(Math.floor(totalSec / 60)).padStart(2, '0');
+  const ss = String(totalSec % 60).padStart(2, '0');
+  return `${mm}:${ss}`;
+}
+
+function updateTimerUI(ms) {
+  if (!els.timer) return;
+  const t = fmtTime(ms);
+  els.timer.textContent = t;
+  els.timer.setAttribute('aria-label', `Time remaining ${t}`);
+}
+
+function clearTimer() {
+  if (gameState.timerId) {
+    clearInterval(gameState.timerId);
+    gameState.timerId = null;
+  }
+}
+
+function startTimer() {
+  clearTimer();
+  gameState.timedOut = false;
+  gameState.endsAt = Date.now() + TIMER_TOTAL_MS;
+  updateTimerUI(TIMER_TOTAL_MS);
+  gameState.timerId = setInterval(() => {
+    const msLeft = gameState.endsAt - Date.now();
+    if (msLeft <= 0) {
+      updateTimerUI(0);
+      clearTimer();
+      gameState.timedOut = true;
+      showResults();
+      return;
+    }
+    updateTimerUI(msLeft);
+  }, 1000);
 }
 
 function renderQuestion() {
@@ -253,11 +302,18 @@ function nextQuestion() {
 }
 
 function showResults() {
+  clearTimer();
   els.quizCard.classList.add('hidden');
   els.resultsCard.classList.remove('hidden');
 
   const s = gameState.score;
-  const msg = s >= 9 ? '🌟 Excellent!' : s >= 6 ? '👏 Good job!' : '💪 Keep practicing!';
+  const msg = gameState.timedOut
+    ? '⏱️ Time’s up!'
+    : s >= 9
+    ? '🌟 Excellent!'
+    : s >= 6
+    ? '👏 Good job!'
+    : '💪 Keep practicing!';
   els.resultTitle.textContent = msg;
   els.resultScore.textContent = `You scored ${s} / ${gameState.total}.`;
 
@@ -274,6 +330,7 @@ function startGame() {
   gameState.current = 0;
   gameState.score = 0;
   gameState.questions = createQuestions();
+  gameState.timedOut = false;
 
   // Preload this round's flags
   preloadImages(gameState.questions.map(q => q.correct.flag));
@@ -283,6 +340,7 @@ function startGame() {
   // Make sure Next button shows at game start (disabled until answer)
   els.nextBtn.classList.remove('hidden');
   renderQuestion();
+  startTimer();
 }
 
 // Event wiring

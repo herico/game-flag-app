@@ -1,5 +1,5 @@
 /* Flag Quiz PWA Service Worker */
-const CACHE_NAME = 'flag-quiz-cache-v9';
+const CACHE_NAME = 'flag-quiz-cache-v10';
 
 const CORE_ASSETS = [
   './',

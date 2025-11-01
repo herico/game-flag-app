@@ -201,6 +201,16 @@ main.container {
   opacity: 0.9;
 }
 
+.timer {
+  background: var(--color-blue-dark);
+  color: #fff;
+  border-radius: 999px;
+  padding: 0.2rem 0.55rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
 /* Chrome/Safari */
 #progressBar::-webkit-progress-bar {
   background-color: rgba(168, 218, 220, 0.35);
