@@ -537,7 +537,8 @@ const pairingState = {
   sessionTotal: 20,
   roundSize: 5,
   pool: [], // selected FLAGS for the entire session (20)
-  roundIndex: 0, // 0..3
+  active: [], // array of country codes currently visible (target size: roundSize)
+  nextPtr: 0, // index into pool for the next replacement
   matched: 0,
   attempts: 0,
   selectedName: null, // code
@@ -571,7 +572,54 @@ function clearPairsBoard() {
   pairingState.selectedFlag = null;
 }
 
-function renderPairsRound() {
+function getCountryByCode(code) {
+  return FLAGS.find(f => f.code === code);
+}
+
+function createNameBtn(country) {
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'pair-btn';
+  btn.textContent = country.name;
+  btn.dataset.code = country.code;
+  btn.setAttribute('aria-label', `Country ${country.name}`);
+  btn.addEventListener('click', () => handleNameClick(btn));
+  return btn;
+}
+
+function createFlagBtn(country) {
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'pair-btn';
+  btn.dataset.code = country.code;
+  btn.setAttribute('aria-label', `Flag of ${country.name}`);
+  const img = document.createElement('img');
+  img.alt = `Flag of ${country.name}`;
+  img.className = 'flag-thumb';
+  setFlagImage(img, country.code, country.name);
+  btn.appendChild(img);
+  btn.addEventListener('click', () => handleFlagClick(btn));
+  return btn;
+}
+
+function insertAtRandom(parent, el) {
+  const count = parent.children.length;
+  if (count === 0) {
+    parent.appendChild(el);
+    return;
+  }
+  const idx = Math.floor(Math.random() * (count + 1));
+  if (idx >= count) parent.appendChild(el);
+  else parent.insertBefore(el, parent.children[idx]);
+}
+
+function reshuffleChildren(parent) {
+  const arr = Array.from(parent.children);
+  const shuffled = shuffle(arr);
+  shuffled.forEach((child) => parent.appendChild(child));
+}
+
+function renderPairsBoard() {
   setPairsProgress();
   els.quizCard.classList.add('hidden');
   els.pairsCard.classList.remove('hidden');
@@ -579,41 +627,18 @@ function renderPairsRound() {
   els.pairsNextBtn.classList.add('hidden');
 
   clearPairsBoard();
-  const start = pairingState.roundIndex * pairingState.roundSize;
-  const items = pairingState.pool.slice(start, start + pairingState.roundSize);
+  const items = pairingState.active.map(code => getCountryByCode(code)).filter(Boolean);
   const names = shuffle(items);
   const flags = shuffle(items);
 
   // Render names
-  names.forEach((c) => {
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'pair-btn';
-    btn.textContent = c.name;
-    btn.dataset.code = c.code;
-    btn.setAttribute('aria-label', `Country ${c.name}`);
-    btn.addEventListener('click', () => handleNameClick(btn));
-    els.pairsNames.appendChild(btn);
-  });
+  names.forEach((c) => { els.pairsNames.appendChild(createNameBtn(c)); });
 
   // Preload flags
   preloadImages(flags.map(f => f.flag));
 
   // Render flags
-  flags.forEach((c) => {
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'pair-btn';
-    btn.dataset.code = c.code;
-    btn.setAttribute('aria-label', `Flag of ${c.name}`);
-    const img = document.createElement('img');
-    img.alt = `Flag of ${c.name}`;
-    img.className = 'flag-thumb';
-    setFlagImage(img, c.code, c.name);
-    btn.appendChild(img);
-    btn.addEventListener('click', () => handleFlagClick(btn));
-    els.pairsFlags.appendChild(btn);
-  });
+  flags.forEach((c) => { els.pairsFlags.appendChild(createFlagBtn(c)); });
 }
 
 function clearPairSelections() {
@@ -634,20 +659,37 @@ function onPairResolve(correct, nameBtn, flagBtn) {
     flagBtn.classList.add('paired');
     nameBtn.setAttribute('aria-disabled', 'true');
     flagBtn.setAttribute('aria-disabled', 'true');
+    const code = nameBtn.dataset.code;
     pairingState.matched += 1;
+    // Remove matched code from active set
+    pairingState.active = pairingState.active.filter(c => c !== code);
     setPairsProgress();
-    // If round done
-    const start = pairingState.roundIndex * pairingState.roundSize;
-    const roundMatched = els.pairsNames.querySelectorAll('.pair-btn[disabled]').length;
-    if (roundMatched >= pairingState.roundSize) {
-      if (pairingState.matched >= pairingState.sessionTotal) {
-        showPairsResults();
-      } else {
-        els.pairsNextBtn.classList.remove('hidden');
-        // Move focus to Next for flow
-        requestAnimationFrame(() => els.pairsNextBtn.focus());
+
+    // After a short fade, remove elements and optionally add new ones
+    setTimeout(() => {
+      // Remove from DOM
+      if (nameBtn.parentNode) nameBtn.parentNode.removeChild(nameBtn);
+      if (flagBtn.parentNode) flagBtn.parentNode.removeChild(flagBtn);
+
+      // If we still have items left, replenish to keep active size up to roundSize
+      if (pairingState.nextPtr < pairingState.pool.length) {
+        const newCountry = pairingState.pool[pairingState.nextPtr++];
+        pairingState.active.push(newCountry.code);
+        // Insert new buttons at random positions
+        insertAtRandom(els.pairsNames, createNameBtn(newCountry));
+        preloadImages([newCountry.flag]);
+        insertAtRandom(els.pairsFlags, createFlagBtn(newCountry));
       }
-    }
+
+      // Light reshuffle of the remaining visible items to combat elimination patterns
+      reshuffleChildren(els.pairsNames);
+      reshuffleChildren(els.pairsFlags);
+
+      // If no active items remaining and no more to add, finish
+      if (pairingState.active.length === 0 && pairingState.nextPtr >= pairingState.pool.length) {
+        showPairsResults();
+      }
+    }, 200);
   } else {
     nameBtn.classList.add('wrong');
     flagBtn.classList.add('wrong');
@@ -700,11 +742,6 @@ function handleFlagClick(btn) {
   tryResolvePair();
 }
 
-function nextPairsRound() {
-  pairingState.roundIndex += 1;
-  renderPairsRound();
-}
-
 function startPairsGame() {
   clearTimer();
   showTimer(false);
@@ -712,10 +749,11 @@ function startPairsGame() {
   els.quizCard.classList.add('hidden');
   els.pairsCard.classList.remove('hidden');
   pairingState.pool = shuffle(FLAGS).slice(0, pairingState.sessionTotal);
-  pairingState.roundIndex = 0;
+  pairingState.active = pairingState.pool.slice(0, pairingState.roundSize).map(c => c.code);
+  pairingState.nextPtr = pairingState.roundSize;
   pairingState.matched = 0;
   pairingState.attempts = 0;
-  renderPairsRound();
+  renderPairsBoard();
 }
 
 function showPairsResults() {
@@ -742,8 +780,7 @@ if (els.modeSelect) {
   els.modeSelect.addEventListener('change', () => setMode(els.modeSelect.value));
 }
 
-// Pairs next button
-if (els.pairsNextBtn) els.pairsNextBtn.addEventListener('click', nextPairsRound);
+// Pairs next button is unused in dynamic mode; keep hidden.
 
 // Play again respects current mode
 els.playAgainBtn.addEventListener('click', () => {
