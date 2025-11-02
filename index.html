@@ -42,17 +42,11 @@
   </head>
   <body>
     <header class="container header">
-      <nav>
-        <ul>
+      <nav class="header-nav">
+        <ul class="header-left">
           <li><strong>Flag Quiz</strong></li>
         </ul>
-        <ul class="header-progress">
-          <li>
-            <progress id="progressBar" value="0" max="10" aria-label="Quiz progress"></progress>
-            <small id="progressCounter" aria-hidden="true">1 / 10 • 9 left</small>
-            <small id="timer" class="timer" aria-live="off" aria-label="Time remaining 03:00">03:00</small>
-            <small id="progress" class="sr-only">Question 1 of 10</small>
-          </li>
+        <ul class="header-actions">
           <li>
             <button id="settingsBtn" class="icon-btn" type="button" aria-label="Open settings" title="Settings">
               <svg class="icon" width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
@@ -66,6 +60,28 @@
           </li>
         </ul>
       </nav>
+      <div class="header-progress-row">
+        <div
+          id="progressChip"
+          class="progress-chip"
+          role="progressbar"
+          aria-label="Quiz progress"
+          aria-live="polite"
+          aria-valuemin="0"
+          aria-valuemax="10"
+          aria-valuenow="0"
+        >
+          <div class="progress-chip__meter" aria-hidden="true">
+            <div id="progressFill" class="progress-chip__fill"></div>
+          </div>
+          <div class="progress-chip__content">
+            <span id="progressPrimary" class="progress-chip__primary" aria-hidden="true">0 / 0</span>
+            <span id="progressSecondary" class="progress-chip__secondary" aria-hidden="true">Loading...</span>
+          </div>
+        </div>
+        <small id="timer" class="timer" aria-live="off" aria-label="Time remaining 03:00">03:00</small>
+        <small id="progress" class="sr-only">Question 1 of 10</small>
+      </div>
     </header>
 
     <main class="container">

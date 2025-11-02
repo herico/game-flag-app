@@ -299,8 +299,10 @@ const els = {
   modeQuiz: document.getElementById('modeQuiz'),
   modePairs: document.getElementById('modePairs'),
   progress: document.getElementById('progress'),
-  progressBar: document.getElementById('progressBar'),
-  progressCounter: document.getElementById('progressCounter'),
+  progressChip: document.getElementById('progressChip'),
+  progressFill: document.getElementById('progressFill'),
+  progressPrimary: document.getElementById('progressPrimary'),
+  progressSecondary: document.getElementById('progressSecondary'),
   timer: document.getElementById('timer'),
   flagImage: document.getElementById('flagImage'),
   flagSpinner: document.getElementById('flagSpinner'),
@@ -335,23 +337,43 @@ function createQuestions() {
   return questions.slice(0, gameState.total);
 }
 
+function updateProgressChip({ current = 0, total = 1, primary = '', secondary = '', label = '' }) {
+  const safeTotal = total > 0 ? total : 1;
+  const clampedCurrent = Math.min(Math.max(current, 0), safeTotal);
+
+  if (els.progressPrimary) {
+    els.progressPrimary.textContent = primary;
+  }
+  if (els.progressSecondary) {
+    els.progressSecondary.textContent = secondary || '';
+  }
+  if (els.progressChip) {
+    els.progressChip.setAttribute('aria-valuemin', '0');
+    els.progressChip.setAttribute('aria-valuemax', String(safeTotal));
+    els.progressChip.setAttribute('aria-valuenow', String(clampedCurrent));
+    if (label) {
+      els.progressChip.setAttribute('aria-label', label);
+    }
+  }
+  if (els.progressFill) {
+    const percent = (clampedCurrent / safeTotal) * 100;
+    els.progressFill.style.width = `${percent}%`;
+  }
+}
+
 function setProgress() {
   const current = Math.min(gameState.current + 1, gameState.total);
+  const remaining = Math.max(gameState.total - current, 0);
   if (els.progress) {
     els.progress.textContent = `Question ${current} of ${gameState.total}`;
   }
-  if (els.progressCounter) {
-    const remaining = Math.max(gameState.total - current, 0);
-    els.progressCounter.textContent = `${current} / ${gameState.total} • ${remaining} left`;
-  }
-  if (els.progressBar) {
-    els.progressBar.max = gameState.total;
-    // Show the current question (starts at 1 on the first question)
-    els.progressBar.value = current;
-    els.progressBar.setAttribute('aria-valuemin', '0');
-    els.progressBar.setAttribute('aria-valuemax', String(gameState.total));
-    els.progressBar.setAttribute('aria-valuenow', String(current));
-  }
+  updateProgressChip({
+    current,
+    total: gameState.total,
+    primary: `${current} / ${gameState.total}`,
+    secondary: remaining > 0 ? `${remaining} left` : 'Final question',
+    label: `Quiz progress: question ${current} of ${gameState.total}`
+  });
 }
 
 // Shared header helpers
@@ -531,8 +553,13 @@ function setMode(mode) {
   els.resultsCard.classList.add('hidden');
   // Reset progress visuals
   if (els.progress) els.progress.textContent = '';
-  if (els.progressCounter) els.progressCounter.textContent = '';
-  if (els.progressBar) { els.progressBar.value = 0; els.progressBar.max = 1; }
+  updateProgressChip({
+    current: 0,
+    total: 1,
+    primary: '0 / 0',
+    secondary: 'Loading...',
+    label: appMode === 'pairs' ? 'Pairs progress' : 'Quiz progress'
+  });
   clearTimer();
   showTimer(appMode === 'quiz');
   if (appMode === 'quiz') startGame(); else startPairsGame();
@@ -554,21 +581,18 @@ const pairingState = {
 function setPairsProgress() {
   const current = pairingState.matched;
   const total = pairingState.sessionTotal;
+  const done = Math.min(current, total);
   if (els.progress) {
-    const done = Math.min(current, total);
     els.progress.textContent = `Pairs matched ${done} of ${total}`;
   }
-  if (els.progressCounter) {
-    const remaining = Math.max(total - current, 0);
-    els.progressCounter.textContent = `${current} / ${total} • ${remaining} left`;
-  }
-  if (els.progressBar) {
-    els.progressBar.max = total;
-    els.progressBar.value = current;
-    els.progressBar.setAttribute('aria-valuemin', '0');
-    els.progressBar.setAttribute('aria-valuemax', String(total));
-    els.progressBar.setAttribute('aria-valuenow', String(current));
-  }
+  const remaining = Math.max(total - done, 0);
+  updateProgressChip({
+    current: done,
+    total,
+    primary: `${done} / ${total}`,
+    secondary: remaining > 0 ? `Pairs: ${remaining} to go` : 'Pairs complete',
+    label: `Pairs progress: ${done} of ${total}`
+  });
 }
 
 function clearPairsBoard() {
