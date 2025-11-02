@@ -65,7 +65,7 @@ body {
 
 main.container {
   max-width: 680px;
-  padding: 1rem;
+  padding:  0 1rem;
 }
 
 .card {
@@ -346,6 +346,21 @@ main.container {
 }
 
 /* Pairs mode layout */
+.pairs-header {
+  margin-bottom: 1.25rem;
+}
+
+.pairs-header h2 {
+  margin: 0 0 0.50rem 0;
+  font-size: clamp(1.1rem, 2.4vw, 1.3rem);
+  line-height: 1.2;
+}
+
+.pairs-header p {
+  margin: 0;
+  font-size: 0.85rem;
+}
+
 .pairs-grid {
   display: grid;
   grid-template-columns: 1fr 1fr; /* keep two columns even on small screens */

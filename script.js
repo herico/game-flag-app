@@ -281,10 +281,13 @@ const gameState = {
   score: 0,
   questions: [], // array of { correct: Flag, options: Flag[] }
   locked: false,
-  // Timer
-  timerId: null,
-  endsAt: 0,
   timedOut: false
+};
+
+const timerState = {
+  id: null,
+  endsAt: 0,
+  mode: null
 };
 
 // -------------------------
@@ -402,24 +405,33 @@ function updateTimerUI(ms) {
 }
 
 function clearTimer() {
-  if (gameState.timerId) {
-    clearInterval(gameState.timerId);
-    gameState.timerId = null;
+  if (timerState.id) {
+    clearInterval(timerState.id);
+    timerState.id = null;
   }
+  timerState.endsAt = 0;
+  timerState.mode = null;
 }
 
-function startTimer() {
+function startTimer(mode = 'quiz', durationMs = TIMER_TOTAL_MS) {
   clearTimer();
-  gameState.timedOut = false;
-  gameState.endsAt = Date.now() + TIMER_TOTAL_MS;
-  updateTimerUI(TIMER_TOTAL_MS);
-  gameState.timerId = setInterval(() => {
-    const msLeft = gameState.endsAt - Date.now();
+  timerState.mode = mode;
+  timerState.endsAt = Date.now() + durationMs;
+  if (mode === 'quiz') gameState.timedOut = false;
+  if (mode === 'pairs') pairingState.timedOut = false;
+  updateTimerUI(durationMs);
+  timerState.id = setInterval(() => {
+    const msLeft = timerState.endsAt - Date.now();
     if (msLeft <= 0) {
       updateTimerUI(0);
       clearTimer();
-      gameState.timedOut = true;
-      showResults();
+      if (mode === 'quiz') {
+        gameState.timedOut = true;
+        showResults();
+      } else if (mode === 'pairs') {
+        pairingState.timedOut = true;
+        showPairsResults({ timedOut: true });
+      }
       return;
     }
     updateTimerUI(msLeft);
@@ -532,7 +544,7 @@ function startGame() {
   els.nextBtn.classList.remove('hidden');
   renderQuestion();
   showTimer(true);
-  startTimer();
+  startTimer('quiz');
 }
 
 // Event wiring
@@ -561,7 +573,7 @@ function setMode(mode) {
     label: appMode === 'pairs' ? 'Pairs progress' : 'Quiz progress'
   });
   clearTimer();
-  showTimer(appMode === 'quiz');
+  showTimer(true);
   if (appMode === 'quiz') startGame(); else startPairsGame();
 }
 
@@ -574,6 +586,7 @@ const pairingState = {
   nextPtr: 0, // index into pool for the next replacement
   matched: 0,
   attempts: 0,
+  timedOut: false,
   selectedName: null, // code
   selectedFlag: null // code
 };
@@ -774,7 +787,7 @@ function handleFlagClick(btn) {
 
 function startPairsGame() {
   clearTimer();
-  showTimer(false);
+  showTimer(true);
   els.resultsCard.classList.add('hidden');
   els.quizCard.classList.add('hidden');
   els.pairsCard.classList.remove('hidden');
@@ -783,16 +796,23 @@ function startPairsGame() {
   pairingState.nextPtr = pairingState.roundSize;
   pairingState.matched = 0;
   pairingState.attempts = 0;
+  pairingState.timedOut = false;
   renderPairsBoard();
+  startTimer('pairs');
 }
 
-function showPairsResults() {
+function showPairsResults({ timedOut = false } = {}) {
+  clearTimer();
+  pairingState.timedOut = timedOut;
   els.quizCard.classList.add('hidden');
   els.pairsCard.classList.add('hidden');
   els.resultsCard.classList.remove('hidden');
   const s = pairingState.matched;
-  els.resultTitle.textContent = 'Pairs complete!';
-  els.resultScore.textContent = `You matched ${s} / ${pairingState.sessionTotal} countries` + (pairingState.attempts ? ` with ${pairingState.attempts} extra attempts.` : '.');
+  const attemptsSuffix = pairingState.attempts ? ` with ${pairingState.attempts} extra attempts.` : '.';
+  els.resultTitle.textContent = timedOut ? '⏱️ Time is up!' : 'Pairs complete!';
+  els.resultScore.textContent = timedOut
+    ? `You matched ${s} / ${pairingState.sessionTotal} before time ran out${attemptsSuffix}`
+    : `You matched ${s} / ${pairingState.sessionTotal} countries${attemptsSuffix}`;
   try {
     const best = Number(localStorage.getItem('bestPairs') || 0);
     if (s > best) localStorage.setItem('bestPairs', String(s));
