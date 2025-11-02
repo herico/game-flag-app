@@ -803,9 +803,43 @@ els.playAgainBtn.addEventListener('click', () => {
 // PWA: Service Worker Registration
 // -------------------------
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker
-      .register('./service-worker.js')
-      .catch(() => {/* noop */});
+  window.addEventListener('load', async () => {
+    try {
+      const reg = await navigator.serviceWorker.register('./service-worker.js');
+
+      // If there's an updated SW already waiting, activate it immediately
+      if (reg.waiting) {
+        reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+      }
+
+      // When a new SW is found, ask it to skip waiting once installed
+      reg.addEventListener('updatefound', () => {
+        const sw = reg.installing;
+        if (!sw) return;
+        sw.addEventListener('statechange', () => {
+          if (sw.state === 'installed' && navigator.serviceWorker.controller) {
+            sw.postMessage({ type: 'SKIP_WAITING' });
+          }
+        });
+      });
+
+      // Reload the page automatically when the controller changes to the new SW
+      let refreshing = false;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (refreshing) return;
+        refreshing = true;
+        // Defer a tick so the new controller is ready
+        setTimeout(() => window.location.reload(), 50);
+      });
+
+      // Periodically check for updates when the app regains focus
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+          reg.update().catch(() => {});
+        }
+      });
+      // Background update ping (once per hour)
+      setInterval(() => reg.update().catch(() => {}), 60 * 60 * 1000);
+    } catch {}
   });
 }

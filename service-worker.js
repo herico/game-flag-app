@@ -1,5 +1,6 @@
 /* Flag Quiz PWA Service Worker */
-const CACHE_NAME = 'flag-quiz-cache-v11';
+// Bump this when caching logic or core assets change to ensure fresh caches
+const CACHE_NAME = 'flag-quiz-cache-v12';
 
 const CORE_ASSETS = [
   './',
@@ -29,6 +30,16 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
+// Allow clients to trigger immediate activation of a waiting SW
+self.addEventListener('message', (event) => {
+  try {
+    const data = event.data || {};
+    if (data && data.type === 'SKIP_WAITING') {
+      self.skipWaiting();
+    }
+  } catch {}
+});
+
 // Cache-first for same-origin assets and images; network fallback
 self.addEventListener('fetch', (event) => {
   const { request } = event;
@@ -37,11 +48,33 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(request.url);
   const isSameOrigin = url.origin === self.location.origin;
   const isImage = request.destination === 'image' || /\.(png|svg|jpg|jpeg|webp|gif)(\?.*)?$/i.test(url.pathname);
+  const isHtmlNavigation = request.mode === 'navigate' || (request.destination === 'document');
+  const isStaticAsset = /\.(?:js|css)(\?.*)?$/i.test(url.pathname);
+  const isJson = /\.(?:json)(\?.*)?$/i.test(url.pathname);
 
   // Strategy:
-  // - For images (any origin): cache-first, then network; cache opaque too
-  // - For same-origin: cache-first
-  // - For others: network-first with cache fallback
+  // - HTML navigations: network-first (ensures new app shell), fallback to cache
+  // - Same-origin JS/CSS: stale-while-revalidate (serve fast, update in bg)
+  // - JSON (same-origin): network-first to respect freshness controls
+  // - Images (any origin): cache-first, then network; cache opaque too
+  // - Other cross-origin: network-first with cache fallback
+
+  // HTML: network-first keeps app shell up to date
+  if (isHtmlNavigation) {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          // Update cache copy for offline
+          const copy = response.clone();
+          event.waitUntil(
+            caches.open(CACHE_NAME).then((cache) => cache.put('./index.html', copy)).catch(() => {})
+          );
+          return response;
+        })
+        .catch(() => caches.match('./index.html'))
+    );
+    return;
+  }
 
   if (isImage) {
     event.respondWith(
@@ -65,6 +98,47 @@ self.addEventListener('fetch', (event) => {
   }
 
   if (isSameOrigin) {
+    // JSON: prefer network to reflect latest content
+    if (isJson) {
+      event.respondWith(
+        fetch(request)
+          .then((response) => {
+            try {
+              if (response.ok) {
+                const copy = response.clone();
+                caches.open(CACHE_NAME).then((cache) => cache.put(request, copy)).catch(() => {});
+              }
+            } catch {}
+            return response;
+          })
+          .catch(() => caches.match(request))
+      );
+      return;
+    }
+
+    // JS/CSS: stale-while-revalidate
+    if (isStaticAsset) {
+      event.respondWith(
+        caches.match(request).then((cached) => {
+          const fetchPromise = fetch(request)
+            .then((response) => {
+              try {
+                if (response.ok) {
+                  const copy = response.clone();
+                  caches.open(CACHE_NAME).then((cache) => cache.put(request, copy)).catch(() => {});
+                }
+              } catch {}
+              return response;
+            })
+            .catch(() => cached);
+          // Return cached immediately if present, else wait for network
+          return cached || fetchPromise;
+        })
+      );
+      return;
+    }
+
+    // Default same-origin: cache-first with network fill
     event.respondWith(
       caches.match(request).then((cached) => {
         if (cached) return cached;
@@ -78,10 +152,7 @@ self.addEventListener('fetch', (event) => {
             } catch {}
             return response;
           })
-          .catch(() => {
-            if (request.mode === 'navigate') return caches.match('./index.html');
-            return new Response('');
-          });
+          .catch(() => new Response(''));
       })
     );
     return;
