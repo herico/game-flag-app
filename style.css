@@ -59,6 +59,10 @@ body {
   position: relative;
 }
 
+.header {
+  padding-top: 0;
+}
+
 .header nav {
   background: transparent;
 }
