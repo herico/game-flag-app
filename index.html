@@ -45,13 +45,6 @@
       <nav>
         <ul>
           <li><strong>Flag Quiz</strong></li>
-          <li class="mode-select-wrap">
-            <label for="modeSelect" class="sr-only">Game mode</label>
-            <select id="modeSelect" aria-label="Select game mode" title="Select game mode">
-              <option value="quiz">Quiz</option>
-              <option value="pairs">Pairs</option>
-            </select>
-          </li>
         </ul>
         <ul class="header-progress">
           <li>
@@ -59,6 +52,14 @@
             <small id="progressCounter" aria-hidden="true">1 / 10 • 9 left</small>
             <small id="timer" class="timer" aria-live="off" aria-label="Time remaining 03:00">03:00</small>
             <small id="progress" class="sr-only">Question 1 of 10</small>
+          </li>
+          <li>
+            <button id="settingsBtn" class="icon-btn" type="button" aria-label="Open settings" title="Settings">
+              <svg class="icon" width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+                <path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M19.4 13.5a7.9 7.9 0 0 0 0-3l2-1.6a.9.9 0 0 0 .2-1.2l-1.9-3.3a.9.9 0 0 0-1.1-.4l-2.3.9a8 8 0 0 0-2.6-1.5l-.3-2.4A.9.9 0 0 0 12.6 0h-3.3a.9.9 0 0 0-.9.8l-.3 2.4a8 8 0 0 0-2.6 1.5l-2.3-.9a.9.9 0 0 0-1.1.4L.3 7.5a.9.9 0 0 0 .2 1.2l2 1.6a7.9 7.9 0 0 0 0 3l-2 1.6a.9.9 0 0 0-.2 1.2l1.9 3.3c.23.4.73.56 1.14.4l2.26-.9c.74.62 1.62 1.12 2.56 1.46l.34 2.42c.07.46.46.8.93.8h3.3c.47 0 .86-.34.93-.8l.34-2.42c.94-.34 1.82-.84 2.56-1.46l2.26.9c.41.16.91 0 1.14-.4l1.9-3.3a.9.9 0 0 0-.2-1.2l-2-1.6Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
           </li>
           <li>
             <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle dark mode" title="Toggle dark mode">🌙</button>
@@ -122,6 +123,34 @@
         </footer>
       </article>
     </main>
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+      <div class="modal-overlay" data-close="true"></div>
+      <div class="modal-content" role="document">
+        <header class="modal-header">
+          <h2 id="settingsTitle">Settings</h2>
+          <button type="button" class="icon-btn" id="settingsClose" aria-label="Close settings" title="Close">
+            <span aria-hidden="true">✕</span>
+          </button>
+        </header>
+        <section class="modal-body">
+          <fieldset>
+            <legend class="muted">Game mode</legend>
+            <label class="row">
+              <input type="radio" name="gameMode" id="modeQuiz" value="quiz" />
+              <span>Quiz</span>
+            </label>
+            <label class="row">
+              <input type="radio" name="gameMode" id="modePairs" value="pairs" />
+              <span>Pairs</span>
+            </label>
+          </fieldset>
+        </section>
+        <footer class="modal-footer">
+          <button type="button" id="settingsApply" class="contrast">Apply</button>
+        </footer>
+      </div>
+    </div>
     <script src="./script.js" defer></script>
   </body>
   </html>

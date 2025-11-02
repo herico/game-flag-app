@@ -291,7 +291,13 @@ const gameState = {
 // DOM Elements
 // -------------------------
 const els = {
-  modeSelect: document.getElementById('modeSelect'),
+  // Settings / mode
+  settingsBtn: document.getElementById('settingsBtn'),
+  settingsModal: document.getElementById('settingsModal'),
+  settingsClose: document.getElementById('settingsClose'),
+  settingsApply: document.getElementById('settingsApply'),
+  modeQuiz: document.getElementById('modeQuiz'),
+  modePairs: document.getElementById('modePairs'),
   progress: document.getElementById('progress'),
   progressBar: document.getElementById('progressBar'),
   progressCounter: document.getElementById('progressCounter'),
@@ -772,12 +778,56 @@ function showPairsResults() {
 }
 
 // Wire mode UI
-if (els.modeSelect) {
-  try {
-    const saved = localStorage.getItem(MODE_LS_KEY);
-    if (saved === 'pairs' || saved === 'quiz') els.modeSelect.value = saved;
-  } catch {}
-  els.modeSelect.addEventListener('change', () => setMode(els.modeSelect.value));
+// Settings modal helpers
+let settingsReturnFocus = null;
+
+function openSettings() {
+  if (!els.settingsModal) return;
+  // reflect current mode in radios
+  const saved = (() => { try { return localStorage.getItem(MODE_LS_KEY); } catch { return null; } })();
+  const mode = (saved === 'pairs' || saved === 'quiz') ? saved : appMode;
+  if (els.modeQuiz) els.modeQuiz.checked = (mode === 'quiz');
+  if (els.modePairs) els.modePairs.checked = (mode === 'pairs');
+
+  els.settingsModal.classList.remove('hidden');
+  settingsReturnFocus = document.activeElement;
+  // Focus first radio
+  requestAnimationFrame(() => {
+    if (mode === 'pairs' && els.modePairs) els.modePairs.focus();
+    else if (els.modeQuiz) els.modeQuiz.focus();
+  });
+}
+
+function closeSettings() {
+  if (!els.settingsModal) return;
+  els.settingsModal.classList.add('hidden');
+  requestAnimationFrame(() => settingsReturnFocus && settingsReturnFocus.focus());
+  settingsReturnFocus = null;
+}
+
+function applySettings() {
+  const selected = (els.modePairs && els.modePairs.checked) ? 'pairs' : 'quiz';
+  setMode(selected);
+  closeSettings();
+}
+
+// Wire buttons and interactions
+if (els.settingsBtn && els.settingsModal) {
+  els.settingsBtn.addEventListener('click', openSettings);
+  if (els.settingsClose) els.settingsClose.addEventListener('click', closeSettings);
+  if (els.settingsApply) els.settingsApply.addEventListener('click', applySettings);
+  // Overlay click
+  els.settingsModal.addEventListener('click', (e) => {
+    const target = e.target;
+    if (target && target.classList && target.classList.contains('modal-overlay')) closeSettings();
+  });
+  // ESC key
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !els.settingsModal.classList.contains('hidden')) {
+      e.preventDefault();
+      closeSettings();
+    }
+  });
 }
 
 // Pairs next button is unused in dynamic mode; keep hidden.
