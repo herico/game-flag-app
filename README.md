@@ -15,26 +15,20 @@ Use the “Game mode” selector in the header to switch. Your last choice is re
 - The service worker caches cross-origin images (opaque responses) so once fetched, they’re available offline.
 
 ## Prefetch assets (optional but recommended)
-Node 18+ is required (uses built-in `fetch`).
 
-```sh
-# From the repo root
-npm run fetch:json         # writes assets/countries.json
-npm run fetch:svg          # downloads all SVG flags into assets/flags/
-# or
-npm run fetch:flags        # downloads both SVG and PNG flags (bigger)
-# or a quick sample for testing
-npm run fetch:sample       # ~30 flags only
-```
+To prefetch assets (countries data and flag images) for offline use, see the [game-flag-app-tools](https://github.com/herico/game-flag-app-tools) repository.
 
-Notes:
-- SVGs from flagcdn.com are crisp and small; PNGs from flagsapi.com are larger. SVG-only is usually sufficient.
-- You can re-run the commands; existing files are skipped.
+The tools repository contains scripts to:
+- Download the countries.json file from REST Countries API
+- Fetch all country flag images (SVG and/or PNG formats)
+- Prepare assets for offline gameplay
+
+For detailed instructions, see [TOOLS_MIGRATION.md](./TOOLS_MIGRATION.md).
 
 ## Development
 Just open `index.html` or serve locally to get proper PWA behavior.
 
-Tip: run the asset fetcher below to make sure flags and country names are available offline.
+Tip: use the asset fetcher from the [game-flag-app-tools](https://github.com/herico/game-flag-app-tools) repository to make sure flags and country names are available offline.
 
 ## Dark mode
 - The UI supports light and dark themes.
