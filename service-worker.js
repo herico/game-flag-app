@@ -1,6 +1,6 @@
-/* Flag Quiz PWA Service Worker */
+/* Flag Game PWA Service Worker */
 // Bump this when caching logic or core assets change to ensure fresh caches
-const CACHE_NAME = 'flag-quiz-cache-v12';
+const CACHE_NAME = 'flag-game-cache-v12';
 
 const CORE_ASSETS = [
   './',

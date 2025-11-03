@@ -1,4 +1,4 @@
-// Flag Recognition Quiz - Vanilla JS
+// Flag Recognition Game - Vanilla JS
 // Uses local SVG/PNG flags and caches assets via a Service Worker for offline use.
 
 // -------------------------

@@ -1,6 +1,6 @@
 {
-  "name": "Flag Recognition Quiz",
-  "short_name": "Flag Quiz",
+  "name": "Flag Recognition Game",
+  "short_name": "Flag Game",
   "start_url": ".",
   "scope": ".",
   "display": "standalone",
