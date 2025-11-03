@@ -281,7 +281,8 @@ const gameState = {
   score: 0,
   questions: [], // array of { correct: Flag, options: Flag[] }
   locked: false,
-  timedOut: false
+  timedOut: false,
+  advanceTimeout: null
 };
 
 const timerState = {
@@ -311,7 +312,6 @@ const els = {
   flagSpinner: document.getElementById('flagSpinner'),
   answersWrap: document.getElementById('answers'),
   answerButtons: Array.from(document.querySelectorAll('.answer')),
-  nextBtn: document.getElementById('nextBtn'),
   quizCard: document.getElementById('quiz-card'),
   // Pairs mode elements
   pairsCard: document.getElementById('pairs-card'),
@@ -438,10 +438,29 @@ function startTimer(mode = 'quiz', durationMs = TIMER_TOTAL_MS) {
   }, 1000);
 }
 
+const ADVANCE_DELAY_CORRECT = 400;
+const ADVANCE_DELAY_WRONG = 1000;
+
+function clearAdvanceTimer() {
+  if (gameState.advanceTimeout) {
+    clearTimeout(gameState.advanceTimeout);
+    gameState.advanceTimeout = null;
+  }
+}
+
+function scheduleNextQuestion(delayMs) {
+  clearAdvanceTimer();
+  gameState.advanceTimeout = setTimeout(() => {
+    gameState.advanceTimeout = null;
+    nextQuestion();
+  }, delayMs);
+}
+
 function renderQuestion() {
   const q = gameState.questions[gameState.current];
   if (!q) return;
 
+  clearAdvanceTimer();
   setProgress();
   setFlagImage(els.flagImage, q.correct.code, q.correct.name, els.flagSpinner);
   els.flagImage.alt = `Flag of ${q.correct.name}`;
@@ -466,10 +485,17 @@ function renderQuestion() {
   });
 
   gameState.locked = false;
-  els.nextBtn.disabled = true;
-  // Ensure Next button is visible on every question
-  els.nextBtn.classList.remove('hidden');
-  els.nextBtn.textContent = (gameState.current + 1 === gameState.total) ? 'See results' : 'Next question';
+
+  requestAnimationFrame(() => {
+    const focusTarget = els.answerButtons.find((btn) => !btn.disabled);
+    if (focusTarget) {
+      try {
+        focusTarget.focus({ preventScroll: true });
+      } catch {
+        focusTarget.focus();
+      }
+    }
+  });
 }
 
 function handleAnswerClick(e) {
@@ -489,9 +515,8 @@ function handleAnswerClick(e) {
     if (b.dataset.correct === 'true') b.classList.add('correct');
   });
 
-  els.nextBtn.disabled = false;
-  // Move focus to Next for quicker flow
-  requestAnimationFrame(() => els.nextBtn.focus());
+  const delay = isCorrect ? ADVANCE_DELAY_CORRECT : ADVANCE_DELAY_WRONG;
+  scheduleNextQuestion(delay);
 }
 
 function nextQuestion() {
@@ -504,6 +529,7 @@ function nextQuestion() {
 }
 
 function showResults() {
+  clearAdvanceTimer();
   clearTimer();
   els.quizCard.classList.add('hidden');
   els.resultsCard.classList.remove('hidden');
@@ -529,6 +555,7 @@ function showResults() {
 }
 
 function startGame() {
+  clearAdvanceTimer();
   gameState.current = 0;
   gameState.score = 0;
   gameState.questions = createQuestions();
@@ -540,8 +567,6 @@ function startGame() {
   els.resultsCard.classList.add('hidden');
   els.quizCard.classList.remove('hidden');
   els.pairsCard.classList.add('hidden');
-  // Make sure Next button shows at game start (disabled until answer)
-  els.nextBtn.classList.remove('hidden');
   renderQuestion();
   showTimer(true);
   startTimer('quiz');
@@ -549,7 +574,6 @@ function startGame() {
 
 // Event wiring
 els.answerButtons.forEach(btn => btn.addEventListener('click', handleAnswerClick));
-els.nextBtn.addEventListener('click', nextQuestion);
 
 // -------------------------
 // Mode switching & Pairs Mode
@@ -572,6 +596,7 @@ function setMode(mode) {
     secondary: 'Loading...',
     label: appMode === 'pairs' ? 'Pairs progress' : 'Quiz progress'
   });
+  clearAdvanceTimer();
   clearTimer();
   showTimer(true);
   if (appMode === 'quiz') startGame(); else startPairsGame();
@@ -786,6 +811,7 @@ function handleFlagClick(btn) {
 }
 
 function startPairsGame() {
+  clearAdvanceTimer();
   clearTimer();
   showTimer(true);
   els.resultsCard.classList.add('hidden');
