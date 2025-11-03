@@ -16,6 +16,8 @@ The following files have been moved to the `game-flag-app-tools` repository:
 **Repository:** `herico/game-flag-app-tools`  
 **Purpose:** Build tools and scripts for preparing assets for the Flag Recognition Game
 
+> **Note:** The new repository needs to be created manually. See the setup instructions at the end of this document.
+
 ## Using the Tools
 
 To use the asset fetching tools:
@@ -63,3 +65,64 @@ The tools are Node.js-based development utilities that:
 - Are not part of the deployed application
 
 Separating them keeps the game repository clean and focused on the actual application code.
+
+## Setting Up the New Repository
+
+Since the tools have been removed from this repository, you'll need to create the new `game-flag-app-tools` repository and add the files to it.
+
+### Quick Setup Steps:
+
+1. **Create the repository** on GitHub:
+   - Go to https://github.com/new
+   - Name: `game-flag-app-tools`
+   - Description: "Build tools and asset fetching scripts for the Flag Recognition Game"
+   - Don't initialize with README
+
+2. **Retrieve the moved files:**
+   
+   The files are available in the git history:
+   ```sh
+   # In the game-flag-app repository
+   git show 86f4cde:package.json > package.json
+   git show 86f4cde:tools/fetch-assets.mjs > fetch-assets.mjs
+   ```
+
+3. **Set up the new repository:**
+   ```sh
+   mkdir game-flag-app-tools
+   cd game-flag-app-tools
+   git init
+   
+   # Create directory structure
+   mkdir -p tools
+   mkdir -p assets/flags
+   
+   # Move the files
+   mv /path/to/package.json .
+   mv /path/to/fetch-assets.mjs tools/
+   
+   # Create .gitignore
+   cat > .gitignore << 'EOF'
+   node_modules/
+   assets/countries.json
+   assets/flags/*.svg
+   assets/flags/*.png
+   .DS_Store
+   EOF
+   
+   # Add README.md (see sample below)
+   # Commit and push
+   git add .
+   git commit -m "Initial commit: Tools from game-flag-app"
+   git remote add origin https://github.com/herico/game-flag-app-tools.git
+   git branch -M main
+   git push -u origin main
+   ```
+
+4. **Test the tools:**
+   ```sh
+   npm install
+   npm run fetch:sample
+   ```
+
+For detailed instructions and all necessary file contents, see the agent's temporary files or contact the repository maintainer.
