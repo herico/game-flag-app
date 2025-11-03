@@ -80,11 +80,19 @@ Since the tools have been removed from this repository, you'll need to create th
 
 2. **Retrieve the moved files:**
    
-   The files are available in the git history:
+   The files are available in the git history (before they were removed):
    ```sh
    # In the game-flag-app repository
-   git show 86f4cde:package.json > package.json
-   git show 86f4cde:tools/fetch-assets.mjs > fetch-assets.mjs
+   # First, find the commit before the removal:
+   git log --oneline | grep -B1 "Move tools"
+   
+   # Use the commit hash before the removal (replace COMMIT_HASH with actual hash):
+   git show COMMIT_HASH^:package.json > package.json
+   git show COMMIT_HASH^:tools/fetch-assets.mjs > fetch-assets.mjs
+   
+   # Or use the parent of the current HEAD if you're on the branch:
+   git show HEAD~2:package.json > package.json
+   git show HEAD~2:tools/fetch-assets.mjs > fetch-assets.mjs
    ```
 
 3. **Set up the new repository:**
