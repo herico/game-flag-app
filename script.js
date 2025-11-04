@@ -486,22 +486,15 @@ function renderQuestion() {
 
   gameState.locked = false;
 
-  // Use requestAnimationFrame to ensure DOM updates are processed, then reset focus
   requestAnimationFrame(() => {
-    // First, blur all buttons to clear any residual focus state
-    els.answerButtons.forEach(btn => btn.blur());
-    
-    // Then focus the first available button
-    requestAnimationFrame(() => {
-      const focusTarget = els.answerButtons.find((btn) => !btn.disabled);
-      if (focusTarget) {
-        try {
-          focusTarget.focus({ preventScroll: true });
-        } catch {
-          focusTarget.focus();
-        }
+    const focusTarget = els.answerButtons.find((btn) => !btn.disabled);
+    if (focusTarget) {
+      try {
+        focusTarget.focus({ preventScroll: true });
+      } catch {
+        focusTarget.focus();
       }
-    });
+    }
   });
 }
 
