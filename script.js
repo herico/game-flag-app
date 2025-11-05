@@ -485,17 +485,6 @@ function renderQuestion() {
   });
 
   gameState.locked = false;
-
-  requestAnimationFrame(() => {
-    const focusTarget = els.answerButtons.find((btn) => !btn.disabled);
-    if (focusTarget) {
-      try {
-        focusTarget.focus({ preventScroll: true });
-      } catch {
-        focusTarget.focus();
-      }
-    }
-  });
 }
 
 function handleAnswerClick(e) {
